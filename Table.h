@@ -41,12 +41,12 @@ ColumnValues(T const* iBegin, size_t iSize):
 
 
 template <typename... Args>
-class Row {
+class RowView {
   using Layout = std::tuple<Args...>;
   std::array<void*, sizeof...(Args)> m_values;
 
  public:
-  explicit Row( std::array<void*, sizeof...(Args)> const& iValues):
+  explicit RowView( std::array<void*, sizeof...(Args)> const& iValues):
   m_values{iValues} {}
 
   template<typename U>
@@ -90,7 +90,7 @@ class TableItr {
 
   enum EndType { kEnd };
 
-  using value_type = Row<Args...>;
+  using value_type = RowView<Args...>;
 
   explicit TableItr( std::array<void*, sizeof...(Args)> const& iValues):
   m_values{iValues} {}
@@ -106,8 +106,8 @@ class TableItr {
   }
 
 
-  Row<Args...> operator*() const {
-    return Row<Args...>{m_values};
+  value_type operator*() const {
+    return value_type{m_values};
   }
 
   TableItr& operator++() {
