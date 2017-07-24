@@ -1,3 +1,5 @@
+#if !defined(TABLE_H)
+#define TABLE_H
 #include <tuple>
 #include <iterator>
 #include <cassert>
@@ -147,8 +149,6 @@ struct TableArrayDtr<0, Args...> {
 
 template <typename... Args>
 class Table {
-  using Layout = std::tuple<Args...>;
-
   std::array<void *, sizeof...(Args)> m_values;
   unsigned int m_size;
 
@@ -172,6 +172,7 @@ class Table {
 
 
  public:
+  using Layout = std::tuple<Args...>;
   using const_iterator = TableItr<Args...>;
 
   template <typename T, typename... CArgs>
@@ -281,6 +282,38 @@ class TableView {
 
 };
 
+/* Table Type Manipulation */
+template <typename T1, typename T2> struct AddColumns;
+template <typename... T1, typename... T2>
+  struct AddColumns<Table<T1...>, std::tuple<T2...>> {
+  using type = Table<T1...,T2...>;
+};
+
+template <typename T1, typename T2>
+  using AddColumns_t = typename AddColumns<T1,T2>::type;
+
+
+template <typename LHS, typename E, typename RHS> struct RemoveColumnCheck;
+template <typename LHS, typename E, typename T, typename... U>
+  struct RemoveColumnCheck<LHS, E, std::tuple<T,U...>> {
+  using type =   typename std::conditional<std::is_same<E, T>::value,
+    typename AddColumns<LHS,std::tuple<U...>>::type, 
+    typename RemoveColumnCheck<typename AddColumns<LHS,std::tuple<T>>::type, E, std::tuple<U...>>::type>::type;
+};
+
+template <typename LHS, typename E>
+  struct RemoveColumnCheck<LHS, E, std::tuple<>> {
+  using type = LHS;
+};
+
+template <typename TABLE, typename E>
+  struct RemoveColumn {
+    using type = typename RemoveColumnCheck<Table<>,E, typename TABLE::Layout>::type;
+  };
+
+template <typename TABLE, typename E>
+  using RemoveColumn_t = typename RemoveColumn<TABLE,E>::type;
 
 
 
+#endif /*TABLE_H*/

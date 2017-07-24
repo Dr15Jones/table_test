@@ -2,6 +2,7 @@
 #include <memory>
 #include <iostream>
 #include <vector>
+#include <string>
 #include <Table.h>
 #include <cmath>
 
@@ -26,6 +27,16 @@ constexpr const char kEnergy[] = "energy";
 using Energy = Column<kEnergy,double>;
 
 using ParticleTable = Table<Px, Py, Pz, Energy>;
+
+/* Create a new table that is an extension of an existing table*/
+constexpr const char kLabel[] = "label";
+using Label = Column<kLabel,std::string>;
+
+using MyJetTable = AddColumns_t<JetTable, std::tuple<Label>>;
+
+/* Creat a table that is a sub table of an existing one */
+using MyOtherJetTable = RemoveColumn_t<MyJetTable, Phi>;
+
 
 std::vector<double> pTs( TableView<Px,Py> tv) {
   std::vector<double> results;
