@@ -2,6 +2,7 @@
 #include <iterator>
 #include <cassert>
 
+/* Column is a type used to declare the purpose of what is stored */
 template <const char* LABEL, typename T>
   struct Column{
     using type = T;
@@ -24,6 +25,7 @@ template <int I, typename T, typename TPL>
  
 }
 
+/* ColumnValues: Give container like access to values in a column */
 template<typename T>
 struct ColumnValues {
 
@@ -37,6 +39,91 @@ ColumnValues(T const* iBegin, size_t iSize):
   T const* end() const { return m_end; }
 };
 
+
+template <typename... Args>
+class Row {
+  using Layout = std::tuple<Args...>;
+  std::array<void*, sizeof...(Args)> m_values;
+
+ public:
+  explicit Row( std::array<void*, sizeof...(Args)> const& iValues):
+  m_values{iValues} {}
+
+  template<typename U>
+    typename U::type const& get() const {
+    return *(static_cast<typename U::type*>(columnAddress<U>()));
+  }
+
+  template<typename U>
+    void * columnAddress() const {
+    return m_values[tablehelp::GetIndex<0,U,Layout>::index];
+  }
+  
+};
+
+template<int I, typename... Args>
+  struct TableItrAdvance {
+    using Layout = std::tuple<Args...>;
+    static void advance(std::array<void*, sizeof...(Args)>& iArray, int iStep) {
+      using Type = typename std::tuple_element<I,Layout>::type::type;
+      TableItrAdvance<I-1,Args...>::advance(iArray,iStep);
+      auto p = static_cast<Type*>( iArray[I]);
+      iArray[I] = p+iStep;
+    }
+  };
+
+template<typename... Args>
+struct TableItrAdvance<0,Args...> {
+    using Layout = std::tuple<Args...>;
+    static void advance(std::array<void*, sizeof...(Args)>& iArray, int iStep) {
+      using Type = typename std::tuple_element<0,Layout>::type::type;
+      auto p = static_cast<Type*>( iArray[0]);
+      iArray[0] = p+iStep;
+    }
+};
+
+template <typename... Args>
+class TableItr {
+  using Layout = std::tuple<Args...>;
+  std::array<void*, sizeof...(Args)> m_values;
+ public:
+
+  enum EndType { kEnd };
+
+  using value_type = Row<Args...>;
+
+  explicit TableItr( std::array<void*, sizeof...(Args)> const& iValues):
+  m_values{iValues} {}
+
+  explicit TableItr( std::array<void*, sizeof...(Args)> const& iValues, int iOffset):
+  m_values{iValues} {
+    TableItrAdvance<sizeof...(Args)-1, Args...>::advance(m_values, iOffset);
+  }
+
+  explicit TableItr( std::array<void*, sizeof...(Args)> const& iValues, unsigned int iOffset, EndType):
+  m_values{iValues} {
+    TableItrAdvance<0, Args...>::advance(m_values, static_cast<int>(iOffset));
+  }
+
+
+  Row<Args...> operator*() const {
+    return Row<Args...>{m_values};
+  }
+
+  TableItr& operator++() {
+    TableItrAdvance<sizeof...(Args)-1, Args...>::advance(m_values,1);
+    return *this;
+  }
+
+  bool operator==( const TableItr<Args...>& iOther) {
+    return m_values[0] == iOther.m_values[0];
+  }
+
+  bool operator!=( const TableItr<Args...>& iOther) {
+    return m_values[0] != iOther.m_values[0];
+  }
+
+};
 
 template <int I, typename... Args>
   struct TableArrayDtr {
@@ -85,6 +172,8 @@ class Table {
 
 
  public:
+  using const_iterator = TableItr<Args...>;
+
   template <typename T, typename... CArgs>
     Table(T const& iContainer, CArgs... iArgs): m_size(iContainer.size()) {
     static_assert( sizeof...(Args) == sizeof...(CArgs)+1, "Wrong number of arguments passed to Table constructor");
@@ -120,6 +209,9 @@ class Table {
     void * columnAddressWorkaround( U const*) const {
     return columnAddress<U>();
   }
+
+  const_iterator begin() const { return const_iterator{m_values}; }
+  const_iterator end() const { return const_iterator{m_values,size(),const_iterator::kEnd}; }
 
 };
 
@@ -157,6 +249,7 @@ class TableView {
  public:
   using Layout = std::tuple<Args...>;
   static constexpr const size_t kNColumns = sizeof...(Args);
+  using const_iterator = TableItr<Args...>;
 
   template <typename... OArgs>
     TableView( Table<OArgs...> const& iTable):
@@ -182,6 +275,9 @@ class TableView {
     void * columnAddress() const {
     return m_values[tablehelp::GetIndex<0,U,Layout>::index];
   }
+
+  const_iterator begin() const { return const_iterator{m_values}; }
+  const_iterator end() const { return const_iterator{m_values,size(),const_iterator::kEnd}; }
 
 };
 

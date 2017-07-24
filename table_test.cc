@@ -30,14 +30,14 @@ using ParticleTable = Table<Px, Py, Pz, Energy>;
 std::vector<double> pTs( TableView<Px,Py> tv) {
   std::vector<double> results;
   results.reserve(tv.size());
-  
-  auto py_s = tv.column<Py>();
-  auto itPy = py_s.begin();
-  for(auto px : tv.column<Px>()) {
-    auto py = *itPy;
-    results.push_back( std::sqrt(px*px + py*py) );
-    ++itPy;
+
+  for(auto const& r: tv) {
+    std::cout <<"loop"<<std::endl;
+    auto px = r.get<Px>();
+    auto py = r.get<Py>();
+    results.push_back(std::sqrt(px*px+py*py));
   }
+  
   return results;
 }  
 
@@ -62,7 +62,11 @@ int main()
   for(auto v: jets.column<Phi>() ) {
     std::cout <<v <<" ";
   }
-  std::cout <<std::endl;  
+  std::cout <<std::endl;
+
+  for(auto const& v: jets) {
+    std::cout <<"eta "<<v.get<Eta>()<<" phi "<<v.get<Phi>()<<std::endl;
+  }
 
   std::vector<double> px = { 0.1, 0.9, 1.3 };
   std::vector<double> py = { 0.8, 1.7, 2.1 };
