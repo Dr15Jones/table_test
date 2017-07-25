@@ -148,12 +148,15 @@ struct TableArrayDtr<0, Args...> {
 
 
 template <typename... Args>
+class TableView;
+
+template <typename... Args>
 class Table {
   std::array<void *, sizeof...(Args)> m_values;
   unsigned int m_size;
 
   template<int I, typename T, typename... U>
-    void ctrFiller(T const& iContainer, U... iU) {
+    void ctrFiller(int iNColumns, T const& iContainer, U... iU) {
     assert(iContainer.size() == m_size);
     using Type = typename std::tuple_element<I,Layout>::type::type;
     Type  * temp = new Type [m_size];
@@ -162,13 +165,13 @@ class Table {
       temp[index] = v;
       ++index;
     }
-    m_values[I] = temp;
+    m_values[iNColumns-1-I] = temp;
 
-    ctrFiller<I-1>( std::forward<U>(iU)... );
+    ctrFiller<I-1>(iNColumns, std::forward<U>(iU)... );
   }
 
   template<int I>
-    static void ctrFiller() {}
+    static void ctrFiller(int) {}
 
 
  public:
@@ -178,7 +181,7 @@ class Table {
   template <typename T, typename... CArgs>
     Table(T const& iContainer, CArgs... iArgs): m_size(iContainer.size()) {
     static_assert( sizeof...(Args) == sizeof...(CArgs)+1, "Wrong number of arguments passed to Table constructor");
-    ctrFiller<sizeof...(Args)-1>(iContainer, std::forward<CArgs>(iArgs)...);
+    ctrFiller<sizeof...(Args)-1>(sizeof...(Args), iContainer, std::forward<CArgs>(iArgs)...);
   }
 
  Table() : m_size(0) {
@@ -211,13 +214,14 @@ class Table {
     return columnAddress<U>();
   }
 
+  template<typename... U>
+    TableView<U...> view() const;
+
   const_iterator begin() const { return const_iterator{m_values}; }
   const_iterator end() const { return const_iterator{m_values,size(),const_iterator::kEnd}; }
 
 };
 
-template <typename... Args>
-class TableView;
 
 template <int I, typename TV, typename T>
   struct TableViewFiller {
@@ -281,6 +285,13 @@ class TableView {
   const_iterator end() const { return const_iterator{m_values,size(),const_iterator::kEnd}; }
 
 };
+
+template<typename... T>
+  template<typename... U>
+TableView<U...> Table<T...>::view() const {
+  return TableView<U...>{*this};
+};
+
 
 /* Table Type Manipulation */
 template <typename T1, typename T2> struct AddColumns;
