@@ -156,7 +156,7 @@ class Table {
   unsigned int m_size;
 
   template<int I, typename T, typename... U>
-    void ctrFiller(int iNColumns, T const& iContainer, U... iU) {
+    void ctrFiller(T const& iContainer, U... iU) {
     assert(iContainer.size() == m_size);
     using Type = typename std::tuple_element<I,Layout>::type::type;
     Type  * temp = new Type [m_size];
@@ -165,13 +165,13 @@ class Table {
       temp[index] = v;
       ++index;
     }
-    m_values[iNColumns-1-I] = temp;
+    m_values[I] = temp;
 
-    ctrFiller<I-1>(iNColumns, std::forward<U>(iU)... );
+    ctrFiller<I+1>(std::forward<U>(iU)... );
   }
 
   template<int I>
-    static void ctrFiller(int) {}
+    static void ctrFiller() {}
 
 
  public:
@@ -181,7 +181,7 @@ class Table {
   template <typename T, typename... CArgs>
     Table(T const& iContainer, CArgs... iArgs): m_size(iContainer.size()) {
     static_assert( sizeof...(Args) == sizeof...(CArgs)+1, "Wrong number of arguments passed to Table constructor");
-    ctrFiller<sizeof...(Args)-1>(sizeof...(Args), iContainer, std::forward<CArgs>(iArgs)...);
+    ctrFiller<0>(iContainer, std::forward<CArgs>(iArgs)...);
   }
 
  Table() : m_size(0) {
