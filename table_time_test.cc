@@ -22,7 +22,10 @@ using Pz = Column<kPz, FType>;
 constexpr const char kEnergy[] = "energy";
 using Energy = Column<kEnergy,FType>;
 
-using ParticleTable = Table<Px, Py, Pz, Energy>;
+constexpr const char kTag[] = "tag";
+using Tag = Column<kTag,int>;
+
+using ParticleTable = Table<Px, Py, Pz, Energy, Tag>;
 
 std::vector<FType> pTs( TableView<Px,Py> tv) {
   std::vector<FType> results;
@@ -39,12 +42,13 @@ std::vector<FType> pTs( TableView<Px,Py> tv) {
 }  
 
 struct Particle {
-  Particle(FType x, FType y, FType z, FType e):
-    px_(x),py_(y),pz_(z),energy_(e) {}
+  Particle(FType x, FType y, FType z, FType e, int tag):
+    px_(x),py_(y),pz_(z),energy_(e), tag_(tag) {}
   FType px_;
   FType py_;
   FType pz_;
   FType energy_;
+  int tag_;
 };
 
 
@@ -80,27 +84,31 @@ int main()
   std::vector<FType> py;
   std::vector<FType> pz;
   std::vector<FType> energy;
+  std::vector<int> tag;
   particles.reserve(kSize);
   px.reserve(kSize);
   py.reserve(kSize);
   pz.reserve(kSize);
   energy.reserve(kSize);
+  tag.reserve(kSize);
 
   for(unsigned int i=0; i<kSize; ++i) {
     px.push_back(i*0.001);
     py.push_back(i*0.001);
     pz.push_back(i*0.001);
     energy.push_back(3.*i*0.001);
-    particles.emplace_back(px.back(),py.back(),pz.back(),energy.back());
+    tag.push_back(i);
+    particles.emplace_back(px.back(),py.back(),pz.back(),energy.back(),tag.back());
   }
 
-  ParticleTable particleTable{px,py,pz,energy};
+  ParticleTable particleTable{px,py,pz,energy,tag};
   {
     std::vector<FType> empty;
     px = std::move(empty);
     py = std::move(empty);
     pz = std::move(empty);
     energy = std::move(empty);
+    tag = std::move(std::vector<int>());
   }
  
 
