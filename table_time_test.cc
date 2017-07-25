@@ -10,14 +10,6 @@
 using FType = double;
 //using FType = float;
 
-constexpr const char kEta[] = "eta";
-using Eta = Column<kEta,double>;
-
-constexpr const char kPhi[] = "phi";
-using Phi = Column<kPhi, FType>;
-
-using JetTable = Table<Eta,Phi>;
-
 constexpr const char kPx[] = "p_x";
 using Px = Column<kPx, FType>;
 
