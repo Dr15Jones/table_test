@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project (SOATable)
-SET(CXX_STL_14 "-std=c++14")
+#SET(CXX_STL_14 "-std=c++14 -O2 -ftree-vectorize")
+SET(CXX_STL_14 "-std=c++14 -O2 -ftree-vectorize -ffast-math -march=native")
 #SET(ROOTSYS "/cvmfs/cms.cern.ch/slc6_amd64_gcc530/lcg/root/6.08.07/")
 SET(ROOTSYS "$ENV{ROOTSYS}")
 SET(ROOT_INCLUDES "-I ${ROOTSYS}/include")
@@ -12,3 +13,4 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 
 #add_executable(branch_test branch_test.cc)
 add_executable(table_test table_test.cc)
+add_executable(table_time_test table_time_test.cc)
