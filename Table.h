@@ -9,6 +9,11 @@ template <const char* LABEL, typename T>
   struct Column{
     using type = T;
     static constexpr char const * const kLabel = LABEL;
+
+    static std::string const& label() {
+      static std::string s_label(LABEL);
+      return s_label;
+    }
   };
 
 namespace tablehelp {
@@ -175,6 +180,7 @@ class Table {
 
 
  public:
+  static constexpr const unsigned int kNColumns = sizeof...(Args);
   using Layout = std::tuple<Args...>;
   using const_iterator = TableItr<Args...>;
 
@@ -212,6 +218,10 @@ class Table {
   template<typename U>
     void * columnAddressWorkaround( U const*) const {
     return columnAddress<U>();
+  }
+
+  void* columnAddressByIndex(unsigned int iIndex) const {
+    return m_values[iIndex];
   }
 
   template<typename... U>

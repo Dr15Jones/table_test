@@ -18,6 +18,7 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 
 #add_executable(branch_test branch_test.cc)
 add_executable(table_test table_test.cc)
+add_executable(table_reader_test table_reader_test.cc)
 add_executable(table_time_test table_time_test.cc)
 
 set(CMAKE_BUILD_TYPE Release)
