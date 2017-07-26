@@ -1,90 +1,10 @@
-#include <array>
-#include <memory>
 #include <iostream>
 #include <vector>
 #include <string>
-#include <Table.h>
 #include <cmath>
 
-
-class TableReaderBase {
-public:
-  TableReaderBase () = default;
-  virtual ~TableReaderBase() {}
-
-  virtual std::vector<std::type_info const*> columnTypes() const = 0;
-
-  virtual std::vector<std::pair<char const*, std::type_info const*>> columnDescriptions() const = 0;
-
-  virtual size_t size() const = 0;
-
-  virtual void * columnAddress(unsigned int iColumnIndex) const = 0;
-
-};
-
-
-template <typename T>
-
-class TableReader : public TableReaderBase {
-public:
-
-  TableReader( T const* iTable):
-    m_table (iTable) {}
-
-  size_t size() const override final { return m_table->size(); }
-  void* columnAddress(unsigned int iColumnIndex) const override final {
-    return m_table->columnAddressByIndex(iColumnIndex); 
-  }
-
-  std::vector<std::type_info const*> columnTypes() const override final {
-    std::vector<std::type_info const*> returnValue;
-    returnValue.reserve(T::kNColumns);
-    using Layout = typename T::Layout;
-    columnTypesImpl<0, T::kNColumns>(returnValue, static_cast<std::true_type*>(nullptr));
-    return returnValue;
-  }
-
-  std::vector<std::pair<char const*, std::type_info const*>> 
-  columnDescriptions() const override final {
-    std::vector<std::pair<char const*, std::type_info const*>>  returnValue;
-    returnValue.reserve(T::kNColumns);
-    using Layout = typename T::Layout;
-    columnDescImpl<0, T::kNColumns>(returnValue, static_cast<std::true_type*>(nullptr));
-    return returnValue;
-  } 
-
-private:
-  template <int I, int S>
-  void columnTypesImpl(std::vector<std::type_info const*>& iV, std::true_type*) const {
-    using Layout = typename T::Layout;
-    iV.push_back( &typeid( typename std::tuple_element<I,Layout>::type ) );
-    columnTypesImpl<I+1, S>(iV,
-			    static_cast<typename std::conditional< I+1 != S, 
-			                                  std::true_type, 
- 			                                  std::false_type>::type*>(nullptr));
-  }
-
-  template <int I, int S>
-  void columnTypesImpl(std::vector<std::type_info const*>&, std::false_type*) const {};
-
-  template <int I, int S>
-  void columnDescImpl(std::vector<std::pair<char const*, std::type_info const*>>& iV, 
-		      std::true_type*) const {
-    using Layout = typename T::Layout;
-    using ColumnType = typename std::tuple_element<I,Layout>::type;
-    iV.emplace_back( ColumnType::label(), &typeid( typename ColumnType::type ) );
-    columnDescImpl<I+1, S>(iV,
-			    static_cast<typename std::conditional< I+1 != S, 
-			                                  std::true_type, 
- 			                                  std::false_type>::type*>(nullptr));
-  }
-
-  template <int I, int S>
-  void columnDescImpl(std::vector<std::pair<char const*, std::type_info const*>>&, 
-		      std::false_type*) const {};
-
-  T const* m_table;
-};
+#include "Table.h"
+#include "TableReader.h"
 
 constexpr const char kEta[] = "eta";
 using Eta = Column<kEta,double>;
@@ -143,7 +63,7 @@ void printColumnTypes(TableReaderBase& reader) {
   auto columns = reader.columnTypes();
 
   for( auto c: columns) {
-    std::cout <<c->name()<<std::endl;
+    std::cout <<c.name()<<std::endl;
   }
 };
 
@@ -151,7 +71,7 @@ void printColumnDescriptions(TableReaderBase& reader) {
   auto columns = reader.columnDescriptions();
 
   for( auto c: columns) {
-    std::cout <<c.first<<" "<<c.second->name()<<std::endl;
+    std::cout <<c.first<<" "<<c.second.name()<<std::endl;
   }
 };
 
