@@ -14,7 +14,7 @@ public:
 
   virtual std::vector<std::type_info const*> columnTypes() const = 0;
 
-  virtual std::vector<std::pair<std::string, std::type_info const*>> columnDescriptions() const = 0;
+  virtual std::vector<std::pair<char const*, std::type_info const*>> columnDescriptions() const = 0;
 
   virtual size_t size() const = 0;
 
@@ -44,9 +44,9 @@ public:
     return returnValue;
   }
 
-  std::vector<std::pair<std::string, std::type_info const*>> 
+  std::vector<std::pair<char const*, std::type_info const*>> 
   columnDescriptions() const override final {
-    std::vector<std::pair<std::string, std::type_info const*>>  returnValue;
+    std::vector<std::pair<char const*, std::type_info const*>>  returnValue;
     returnValue.reserve(T::kNColumns);
     using Layout = typename T::Layout;
     columnDescImpl<0, T::kNColumns>(returnValue, static_cast<std::true_type*>(nullptr));
@@ -68,7 +68,7 @@ private:
   void columnTypesImpl(std::vector<std::type_info const*>&, std::false_type*) const {};
 
   template <int I, int S>
-  void columnDescImpl(std::vector<std::pair<std::string, std::type_info const*>>& iV, 
+  void columnDescImpl(std::vector<std::pair<char const*, std::type_info const*>>& iV, 
 		      std::true_type*) const {
     using Layout = typename T::Layout;
     using ColumnType = typename std::tuple_element<I,Layout>::type;
@@ -80,7 +80,7 @@ private:
   }
 
   template <int I, int S>
-  void columnDescImpl(std::vector<std::pair<std::string, std::type_info const*>>&, 
+  void columnDescImpl(std::vector<std::pair<char const*, std::type_info const*>>&, 
 		      std::false_type*) const {};
 
   T const* m_table;

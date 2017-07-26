@@ -3,6 +3,7 @@
 #include <tuple>
 #include <iterator>
 #include <cassert>
+#include <typeinfo>
 
 /* Column is a type used to declare the purpose of what is stored */
 template <const char* LABEL, typename T>
@@ -10,8 +11,8 @@ template <const char* LABEL, typename T>
     using type = T;
     static constexpr char const * const kLabel = LABEL;
 
-    static std::string const& label() {
-      static std::string s_label(LABEL);
+    static const char* const& label() {
+      static char const* const s_label(LABEL);
       return s_label;
     }
   };
