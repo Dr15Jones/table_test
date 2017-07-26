@@ -3,7 +3,6 @@
 #include <tuple>
 #include <iterator>
 #include <cassert>
-#include <typeinfo>
 
 /* Column is a type used to declare the purpose of what is stored */
 template <const char* LABEL, typename T>
