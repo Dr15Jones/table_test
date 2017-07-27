@@ -271,6 +271,9 @@ class TableView {
   m_size(iTable.size()) {
     TableViewFiller<sizeof...(Args)-1, TableView<Args...>, Table<OArgs...>>::fillArray(m_values, iTable);
   }
+ TableView( unsigned int iSize, std::array<void*, sizeof...(Args)>& iArray):
+  m_size(iSize),
+    m_values(iArray) {}
 
   unsigned int size() const {
     return m_size;
