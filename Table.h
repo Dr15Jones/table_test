@@ -157,8 +157,8 @@ class TableView;
 
 template <typename... Args>
 class Table {
-  std::array<void *, sizeof...(Args)> m_values;
   unsigned int m_size;
+  std::array<void *, sizeof...(Args)> m_values;
 
   template<int I, typename T, typename... U>
     void ctrFiller(T const& iContainer, U... iU) {
