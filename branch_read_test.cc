@@ -154,7 +154,7 @@ int main()
   TableBranchReader<Eta,Phi> reader("Jets", tree);
 
   auto nEntries = tree->GetEntries();
-  for(typeof(nEntries) i = 0; i< nEntries; ++i) {
+  for(decltype(nEntries) i = 0; i< nEntries; ++i) {
     auto view = reader.getEntry(i);
     for( auto const& r: view) {
       std::cout <<"eta "<<r.get<Eta>()<<" phi "<<r.get<Phi>()<<std::endl;

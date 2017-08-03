@@ -198,7 +198,7 @@ int main()
   std::cout <<"size "<<jets.size()<<std::endl;
 
   auto nEntries = tree->GetEntries();
-  for(typeof(nEntries) i = 0; i< nEntries; ++i) {
+  for(decltype(nEntries) i = 0; i< nEntries; ++i) {
     
     jetBranch->GetEntry(i);
     std::cout <<"size "<<jets.size()<<std::endl;

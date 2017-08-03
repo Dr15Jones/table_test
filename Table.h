@@ -2,6 +2,7 @@
 #define TABLE_H
 #include <tuple>
 #include <iterator>
+#include <array>
 #include <cassert>
 
 /* Column is a type used to declare the purpose of what is stored */
