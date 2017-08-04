@@ -24,5 +24,5 @@ add_executable(table_time_test table_time_test.cc)
 add_executable(branch_struct_write_test branch_struct_write_test.cc)
 add_executable(branch_struct_read_test branch_struct_read_test.cc)
 
-#set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_BUILD_TYPE Debug)
