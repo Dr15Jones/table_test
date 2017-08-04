@@ -4,19 +4,13 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TBranch.h"
+#include "TBaseClass.h"
 #include "Table.h"
 #include "TableReader.h"
+#include "JetTable.h"
 #include <iostream>
 #include <unordered_map>
 #include "TInterpreter.h"
-
-constexpr const char kEta[] = "eta";
-using Eta = Column<kEta,double>;
-
-constexpr const char kPhi[] = "phi";
-using Phi = Column<kPhi, double>;
-
-using JetTable = Table<Eta,Phi>;
 
 
 class TableBranchWriter {
@@ -42,7 +36,15 @@ TableBranchWriter::TableBranchWriter(std::string const& iName, TTree& iTree, Tab
 
   //NOTE: size must be an `int` and must be before the arrays
   // else readback will fail
-  strct += "int size;\n";
+
+  strct += "int size;";
+  // We put the type name as meta data via a comment
+  // We can't do this right now since we can't build Table<> dictionaries because of a ROOT bug
+  //std::string tableTypeName = TClass::GetClass(iReader.typeid())->GetName();
+  std::string tableTypeName ="Table<Column<&kEta,double>,Column<&kPhi,double> >";
+  strct +="//";
+  strct +=tableTypeName;
+  strct +="\n";
 
   auto columns = iReader.columnDescriptions();  
   for(auto const& c: columns ) {
@@ -65,8 +67,41 @@ TableBranchWriter::TableBranchWriter(std::string const& iName, TTree& iTree, Tab
     return;
   }
 
+  /*
+  //want to create dictionary for JetTable in order to get its name to use in the Title
+  auto jetTableDef = R"(#include "Table.h"
+constexpr const char kEta[] = "eta";
+using Eta = Column<kEta,double>;
+constexpr const char kPhi[] = "phi";
+using Phi = Column<kPhi, double>;
+using JetTable = Table<Eta,Phi>;
+namespace dictionary {
+   struct JetTableImpl: public JetTable {};
+}
+)";
+  std::cout <<jetTableDef<<std::endl;
+  if( !gInterpreter->Declare(jetTableDef) ) {
+    std::cout <<"Couldn't create JetTable dictionary"<<std::endl;
+    return;
+  }
+
+  //auto jetTableClass = TClass::GetClass(typeid(JetTable));
+  auto jetTableImpl = TClass::GetClass("dictionary::JetTableImpl");
+  dynamic_cast<TBaseClass*>(jetTableImpl->GetListOfBases()->At(0))->GetClassPointer();
+  //auto jetTableClass = TClass::GetClass("Table<Column<&kEta,double>,Column<&kPhi,double> >");
+  auto jetTableClass = TClass::GetClass(typeid(JetTable));
+  if(jetTableClass) {
+    std::cout <<jetTableClass->GetName()<<std::endl;
+  } else {
+    std::cout <<"Could not find JetTable class"<<std::endl;
+  //  return;
+  }
+  
+  //std::cout <<typeid(JetTable).name()<<std::endl;
+  */
 
   m_branch = iTree.Branch((iName+".").c_str(), (std::string("bw::")+iName).c_str(),iAddress);
+
   //iTree.Branch( (iName+"_size").c_str(), &m_size);
 
 
