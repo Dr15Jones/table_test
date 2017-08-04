@@ -1,6 +1,6 @@
 #if !defined(columns_h)
 #define columns_h
-#include "Table.h"
+#include "Column.h"
 
 constexpr const char kEta[] = "eta";
 using Eta = Column<kEta,double>;
