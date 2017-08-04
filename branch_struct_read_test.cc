@@ -3,21 +3,17 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TBranch.h"
+#include "TBranchElement.h"
+#include "TStreamerInfo.h"
+#include "TStreamerElement.h"
 #include "TLeaf.h"
 #include "TDataType.h"
 #include "Table.h"
 #include "TableReader.h"
+#include "JetTable.h"
 #include "TInterpreter.h"
 #include <iostream>
 #include <unordered_map>
-
-constexpr const char kEta[] = "eta";
-using Eta = Column<kEta,double>;
-
-constexpr const char kPhi[] = "phi";
-using Phi = Column<kPhi, double>;
-
-using JetTable = Table<Eta,Phi>;
 
 
 template<typename... Args>
@@ -149,8 +145,6 @@ using Jets = Table<Eta,Phi>;
 int main()
 {
 
-  
-  
   //gDebug = 3;
   TFile f("test_struct_branch.root");
 
@@ -170,24 +164,34 @@ int main()
   {
     auto l = static_cast<TLeaf*>(jetBranch->GetListOfLeaves()->At(0));
     strct += l->GetTypeName()+4;
-    strct += " {\n int size;\n";
+    strct += " {\n";
   }
 
-  auto branches = jetBranch->GetListOfBranches();
-  for( int i = 1; i< branches->GetEntries(); ++i) {
-    auto b = static_cast<TBranch*>(branches->At(i));
-    auto leaves = b->GetListOfLeaves();
-    //std::cout <<b->GetName()<<std::endl;
-    for( int j=0; j< leaves->GetEntries(); ++j)  {
-      auto l = static_cast<TLeaf*>(leaves->At(j));
-      strct += " ";
-      strct += l->GetTypeName();
-      strct += "* ";
-      strct += b->GetName()+branchName.size();
-      strct += "; //[size]\n";
-      //std::cout << l->GetName()<<" "<<l->GetTypeName()<<std::endl;
+  /* Suggestion from Philippe:
+     cast the top TBranch to TBranchElement and then get the
+     StreamerInfo and use that to get the member data info
+
+     To track which Table type went with which branch, add a
+     comment to the size member data which is the type name.
+     The comment can be obtained again via the GetTitle for the
+     appropriate TStreamInfo branch entry for 'size'
+   */
+  {
+    auto je = dynamic_cast<TBranchElement*>(jetBranch);
+    assert(je != nullptr);
+    auto si = je->GetInfo();
+    for(int i = 0; i< si->GetNelement();++i) {
+      auto e = si->GetElement(i);
+      strct +=" ";
+      strct += e->GetTypeName();
+      strct +=" ";
+      strct += e->GetName();
+      strct += ";//";
+      strct +=e->GetTitle();
+      strct +="\n";
     }
   }
+
   strct += "}; }";
   std::cout <<strct<<std::endl;
   gInterpreter->Declare(strct.c_str());
