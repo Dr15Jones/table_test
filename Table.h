@@ -150,23 +150,72 @@ class Table {
   unsigned int m_size = 0;
   std::array<void *, sizeof...(Args)> m_values = {0};
 
-  template<int I, typename T, typename... U>
-    void ctrFiller(T const& iContainer, U... iU) {
-    assert(iContainer.size() == m_size);
-    using Type = typename std::tuple_element<I,Layout>::type::type;
-    Type  * temp = new Type [m_size];
-    unsigned int index = 0;
-    for( auto const& v: iContainer) {
-      temp[index] = v;
-      ++index;
+  struct CtrFillerFromContainers {
+    template<typename T, typename... U>
+      static size_t fill(std::array<void *, sizeof...(Args)>& oValues, T const& iContainer, U... iArgs) {
+      static_assert( sizeof...(Args) == sizeof...(U)+1, "Wrong number of arguments passed to Table constructor");
+      ctrFiller<0>(oValues,iContainer.size(), iContainer,std::forward<U>(iArgs)...);
+      return iContainer.size();
     }
-    m_values[I] = temp;
-
-    ctrFiller<I+1>(std::forward<U>(iU)... );
-  }
+    template<int I, typename T, typename... U>
+      static void ctrFiller(std::array<void *, sizeof...(Args)>& oValues, size_t iSize, T const& iContainer, U... iU) {
+      assert(iContainer.size() == iSize);
+      using Type = typename std::tuple_element<I,Layout>::type::type;
+      Type  * temp = new Type [iSize];
+      unsigned int index = 0;
+      for( auto const& v: iContainer) {
+	temp[index] = v;
+	++index;
+      }
+    oValues[I] = temp;
+    
+    ctrFiller<I+1>(oValues, iSize, std::forward<U>(iU)... );
+    }
 
   template<int I>
-    static void ctrFiller() {}
+    static void ctrFiller(std::array<void *, sizeof...(Args)>& , size_t  ) {}
+
+  };
+
+  struct CtrFillerFromAOS {
+    template<typename T>
+      static size_t fill(std::array<void *, sizeof...(Args)>& oValues, T const& iContainer) {
+      presize<0>(oValues,iContainer.size(),std::true_type{});
+      unsigned index=0;
+      for(auto&& item: iContainer) {
+	fillElement<0>(item,index,oValues,std::true_type{});
+	++index;
+      }
+      return iContainer.size();
+    }
+
+    template<int I>
+    static void presize(std::array<void *, sizeof...(Args)>& oValues, size_t iSize, std::true_type) {
+      using Layout = std::tuple<Args...>;
+      using Type = typename std::tuple_element<I,Layout>::type::type;
+      oValues[I] = new Type[iSize];
+      presize<I+1>(oValues,iSize, std::conditional_t<I+1==sizeof...(Args),
+		   std::false_type,
+		   std::true_type>{});
+    }
+    template<int I>
+    static void presize(std::array<void *, sizeof...(Args)>& oValues, size_t iSize, std::false_type) {}
+
+    template<int I, typename E>
+      static void fillElement(E const& iItem, size_t iIndex, std::array<void *, sizeof...(Args)>& oValues,  std::true_type) {
+      using Layout = std::tuple<Args...>;
+      using ColumnType = typename std::tuple_element<I,Layout>::type;
+      using Type = typename ColumnType::type;
+      Type* pElement = static_cast<Type*>(oValues[I])+iIndex;
+      *pElement = value_for_column(iItem, static_cast<ColumnType*>(nullptr));
+      fillElement<I+1>(iItem, iIndex, oValues, std::conditional_t<I+1==sizeof...(Args),
+		   std::false_type,
+		   std::true_type>{});
+    }
+    template<int I, typename E>
+      static void fillElement(E const& iItem, size_t iIndex, std::array<void *, sizeof...(Args)>& oValues,  std::false_type) {}
+
+  };
 
 
  public:
@@ -176,8 +225,10 @@ class Table {
 
   template <typename T, typename... CArgs>
     Table(T const& iContainer, CArgs... iArgs): m_size(iContainer.size()) {
-    static_assert( sizeof...(Args) == sizeof...(CArgs)+1, "Wrong number of arguments passed to Table constructor");
-    ctrFiller<0>(iContainer, std::forward<CArgs>(iArgs)...);
+    using CtrChoice = std::conditional_t<sizeof...(CArgs)==0,
+      CtrFillerFromAOS,
+      CtrFillerFromContainers>;
+    m_size = CtrChoice::fill(m_values,iContainer,std::forward<CArgs>(iArgs)...);
   }
 
  Table() : m_size(0) {

@@ -41,64 +41,6 @@ std::vector<FType> pTs( TableView<Px,Py> tv) {
   return results;
 }  
 
-template<typename C, typename F>
-struct TransformRange {
-  C const* m_container;
-  F m_f;
-  TransformRange( C const& iC, F iF): m_container(&iC), m_f(iF) {}
-
-  struct Iterator {
-    typename C::const_iterator m_iterator;
-    F m_f;
-
-    decltype(m_f(*m_iterator)) operator*() const {
-      return m_f(*m_iterator);
-    }
-    Iterator& operator++() {
-      ++m_iterator;
-      return *this;
-    }
-
-    bool operator!=( const Iterator& iOther) {
-      return m_iterator != iOther.m_iterator;
-    }
-    
-  };
-
-  Iterator begin() const {
-    return Iterator{ m_container->begin()};
-  }
-
-  Iterator end() const {
-    return Iterator{ m_container->end() };
-  }
-
-  unsigned int size() const { return m_container->size(); }
-
-};
-
-template <typename C, typename F>
-TransformRange<C,F> make_transform_range( C const& iC, F iF) {
-  return TransformRange<C,F>{iC,iF};
-}
-
-template<typename C, typename Clmn>
-struct Transform {
-  typename Clmn::type operator()( typename C::value_type const& iValue) const {
-    return value_for_column(iValue, static_cast<Clmn*>(nullptr) );
-  }
-};
-
-template<typename C, typename Clmn>
-auto make_range_for(C const& iContainer) -> decltype( make_transform_range( iContainer, Transform<C,Clmn>() ) ) {
-  return make_transform_range( iContainer, Transform<C,Clmn>() );
-}
-
-template<typename C, typename... Args>
-Table<Args...> make_table_from(C const& iContainer, Table<Args...>* ) {
-  return Table<Args...>(make_range_for<C,Args>(iContainer)...);
-}
-
 struct Particle {
   Particle(FType x, FType y, FType z, FType e, int tag):
     px_(x),py_(y),pz_(z),energy_(e), tag_(tag) {}
@@ -144,40 +86,23 @@ int main()
   std::vector<Particle> particles;
 
   
-  //std::vector<FType> px;
-  //std::vector<FType> py;
-  //std::vector<FType> pz;
-  //std::vector<FType> energy;
-  //std::vector<int> tag;
   particles.reserve(kSize);
-  //px.reserve(kSize);
-  //py.reserve(kSize);
-  //pz.reserve(kSize);
-  //energy.reserve(kSize);
-  //tag.reserve(kSize);
-
   for(unsigned int i=0; i<kSize; ++i) {
-    //px.push_back(i*0.001);
-    //py.push_back(i*0.001);
-    //pz.push_back(i*0.001);
-    //energy.push_back(3.*i*0.001);
-    //tag.push_back(i);
-    //particles.emplace_back(px.back(),py.back(),pz.back(),energy.back(),tag.back());
     FType v = i*0.001;
     particles.emplace_back(v,v,v,3.*v,i);
   }
 
-  auto particleTable =make_table_from(particles, static_cast<ParticleTable*>(nullptr));
-  //ParticleTable particleTable{px,py,pz,energy,tag};
-  /*  {
-    std::vector<FType> empty;
-    px = std::move(empty);
-    py = std::move(empty);
-    pz = std::move(empty);
-    energy = std::move(empty);
-    tag = std::move(std::vector<int>());
-    } */
+  ParticleTable particleTable(particles);
  
+  assert(particles.size() == particleTable.size());
+  for(unsigned int i=0; i<kSize; ++i) {
+    auto const& p =particles[i];
+    assert(p.px_ == particleTable.get<Px>(i));
+    assert(p.py_ == particleTable.get<Py>(i));
+    assert(p.pz_ == particleTable.get<Pz>(i));
+    assert(p.energy_ == particleTable.get<Energy>(i));
+    assert(p.tag_ == particleTable.get<Tag>(i));
+  }
 
 
   std::cout <<"sum px"<<std::endl;
