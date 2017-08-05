@@ -146,6 +146,73 @@ template <typename... Args>
 class TableView;
 
 template <typename... Args>
+class ColumnsFiller {
+  using Layout = std::tuple<Args...>;
+  Layout m_fillers;
+
+  template<int I, typename ELEMENT, typename RET>
+    auto callFiller(ELEMENT&& iEl, RET*, std::true_type) -> decltype(std::get<I>(m_fillers).m_f(iEl)) {
+    return std::get<I>(m_fillers).m_f(iEl);
+  }
+    
+  template<int I, typename ELEMENT, typename RET>
+    RET callFiller(ELEMENT&& iEl, RET*, std::false_type) {
+    return RET{};
+  }
+
+  template<int I, typename ELEMENT, typename COLUMN>
+    typename COLUMN::type tryValue(ELEMENT&& iEl, COLUMN*, std::true_type, std::true_type) {
+    using Pair = typename std::tuple_element<I,Layout>::type;
+    using COL = typename Pair::Column_type;
+    if(std::is_same<COL,COLUMN>::value) {
+      return callFiller<I>(iEl, 
+			static_cast<typename COLUMN::type*>(nullptr),
+			std::conditional_t<std::is_same<COL,COLUMN>::value,
+			                   std::true_type, std::false_type>{});
+    }
+    return tryValue<I+1>(iEl, static_cast<COLUMN*>(nullptr), 
+			 std::conditional_t<I+1 == sizeof...(Args),
+			 std::false_type, std::true_type>{},
+			 std::conditional_t<std::is_same<COL,COLUMN>::value,
+			 std::false_type, std::true_type>{});
+  }
+
+  template<int I, typename ELEMENT, typename COLUMN>
+    typename COLUMN::type tryValue(ELEMENT&& iEl, COLUMN*, std::false_type, std::true_type) {
+    return value_for_column(iEl,static_cast<COLUMN*>(nullptr));
+  }
+  template<int I, typename ELEMENT, typename COLUMN>
+    typename COLUMN::type tryValue(ELEMENT&& iEl, COLUMN*, std::true_type, std::false_type) {
+    return typename COLUMN::type{};
+  }
+  template<int I, typename ELEMENT, typename COLUMN>
+    typename COLUMN::type tryValue(ELEMENT&& iEl, COLUMN*, std::false_type, std::false_type) {
+    return typename COLUMN::type{};
+  }
+
+ public:
+ ColumnsFiller(Args... iArgs): m_fillers(std::forward<Args>(iArgs)...) {}
+
+  template<typename ELEMENT, typename COLUMN>
+    typename COLUMN::type value(ELEMENT&& iEl, COLUMN*) {
+    return tryValue<0>(iEl, static_cast<COLUMN*>(nullptr), std::true_type{},std::true_type{});
+  }
+};
+
+template<typename COL, typename F>
+  struct ColumnFillerHolder {
+    using Column_type = COL;
+    F m_f;
+  };
+template<typename COL, typename F>
+  ColumnFillerHolder<COL,F> filler_for(F&& iF) { return {iF}; }
+
+template<typename... Args>
+ColumnsFiller<Args...> make_columns_filler(Args... iArgs) {
+  return ColumnsFiller<Args...>(std::forward<Args>(iArgs)...);
+}
+
+template <typename... Args>
 class Table {
   unsigned int m_size = 0;
   std::array<void *, sizeof...(Args)> m_values = {0};
@@ -215,6 +282,33 @@ class Table {
     template<int I, typename E>
       static void fillElement(E const& iItem, size_t iIndex, std::array<void *, sizeof...(Args)>& oValues,  std::false_type) {}
 
+
+    template<typename T, typename F>
+      static size_t fillUsingFiller(F& iFiller, std::array<void *, sizeof...(Args)>& oValues, T const& iContainer) {
+      presize<0>(oValues,iContainer.size(),std::true_type{});
+      unsigned index=0;
+      for(auto&& item: iContainer) {
+	fillElementUsingFiller<0>(iFiller, item,index,oValues,std::true_type{});
+	++index;
+      }
+      return iContainer.size();
+    }
+
+
+    template<int I, typename E, typename F>
+      static void fillElementUsingFiller(F& iFiller, E const& iItem, size_t iIndex, std::array<void *, sizeof...(Args)>& oValues,  std::true_type) {
+      using Layout = std::tuple<Args...>;
+      using ColumnType = typename std::tuple_element<I,Layout>::type;
+      using Type = typename ColumnType::type;
+      Type* pElement = static_cast<Type*>(oValues[I])+iIndex;
+      *pElement = iFiller.value(iItem, static_cast<ColumnType*>(nullptr));
+      fillElementUsingFiller<I+1>(iFiller,iItem, iIndex, oValues, std::conditional_t<I+1==sizeof...(Args),
+		   std::false_type,
+		   std::true_type>{});
+    }
+    template<int I, typename E, typename F>
+      static void fillElementUsingFiller(F&, E const& , size_t , std::array<void *, sizeof...(Args)>& oValues,  std::false_type) {}
+
   };
 
 
@@ -229,6 +323,12 @@ class Table {
       CtrFillerFromAOS,
       CtrFillerFromContainers>;
     m_size = CtrChoice::fill(m_values,iContainer,std::forward<CArgs>(iArgs)...);
+  }
+
+  template<typename T, typename... CArgs>
+    Table(T const& iContainer, ColumnsFiller<CArgs...> iFiller) {
+    m_size = iContainer.size();
+    CtrFillerFromAOS::fillUsingFiller(iFiller,m_values, iContainer);
   }
 
  Table() : m_size(0) {

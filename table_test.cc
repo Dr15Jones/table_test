@@ -59,6 +59,19 @@ void printEta( TableView<Eta> iEtas) {
   std::cout <<std::endl;
 }
 
+struct JetType {
+  double eta_;
+  double phi_;
+};
+
+double value_for_column(JetType const& iJ, Eta*) {
+  return iJ.eta_;
+}
+
+double value_for_column(JetType const& iJ, Phi*) {
+  return iJ.phi_;
+}
+
 int main()
 {
 
@@ -91,6 +104,16 @@ int main()
   }
   std::cout <<std::endl;
 
+  {
+    std::vector<JetType> j = {{1.,3.14},{2.,0.},{4.,1.3}};
+
+    MyJetTable jt{ j, make_columns_filler(filler_for<Label>([](JetType const&) { return "non";}) ) };
+
+    for(auto const& v: jt) {
+      std::cout <<"eta "<<v.get<Eta>()<<" phi "<<v.get<Phi>()<<" "<<v.get<Label>()<<std::endl;
+    }
+
+  }
   return 0;
 }
 
