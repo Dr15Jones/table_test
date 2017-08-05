@@ -89,7 +89,7 @@ int main()
   particles.reserve(kSize);
   for(unsigned int i=0; i<kSize; ++i) {
     FType v = i*0.001;
-    particles.emplace_back(v,v,v,3.*v,i);
+    particles.emplace_back(v,0.5*v,v,3.*v,i);
   }
 
   ParticleTable particleTable(particles);
