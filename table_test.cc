@@ -5,6 +5,7 @@
 #include <string>
 #include <Table.h>
 #include <cmath>
+#include <sstream>
 
 constexpr const char kEta[] = "eta";
 using Eta = Column<kEta,double>;
@@ -107,7 +108,11 @@ int main()
   {
     std::vector<JetType> j = {{1.,3.14},{2.,0.},{4.,1.3}};
 
-    MyJetTable jt{ j, make_columns_filler(filler_for<Label>([](JetType const&) { return "non";}) ) };
+    int index=0;
+    MyJetTable jt{ j, make_columns_filler(filler_for<Label>([&index](JetType const&) 
+							    { std::ostringstream s;
+							      s<<"jet"<<index++;
+							      return s.str();}) ) };
 
     for(auto const& v: jt) {
       std::cout <<"eta "<<v.get<Eta>()<<" phi "<<v.get<Phi>()<<" "<<v.get<Label>()<<std::endl;
