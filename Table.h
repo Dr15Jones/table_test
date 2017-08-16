@@ -244,6 +244,35 @@ class Table {
 
   };
 
+  template<int I>
+    static void copyFromToWithResize(size_t iNElements, std::array<void *, sizeof...(Args)> const& iFrom, std::array<void*, sizeof...(Args)>& oTo, std::true_type) {
+    using Layout = std::tuple<Args...>;
+    using Type = typename std::tuple_element<I,Layout>::type::type;
+    Type* oldPtr = static_cast<Type*>(oTo[I]);
+    Type* ptr = new Type[iNElements];
+    oTo[I]=ptr;
+    std::copy(static_cast<Type const*>(iFrom[I]), static_cast<Type const*>(iFrom[I])+iNElements, ptr);
+    delete [] oldPtr;
+    copyFromToWithResize<I+1>(iNElements, iFrom, oTo, std::conditional_t<I+1 == sizeof...(Args), std::false_type, std::true_type>{} );
+  }
+  template<int I>
+    static void copyFromToWithResize(size_t, std::array<void *, sizeof...(Args)> const& , std::array<void*, sizeof...(Args)>&, std::false_type) {}
+
+  template<int I>
+    static void resizeFromTo(size_t iOldSize, size_t iNewSize, std::array<void *, sizeof...(Args)>& ioArray) {
+    using Layout = std::tuple<Args...>;
+    using Type = typename std::tuple_element<I,Layout>::type::type;
+    Type* ptr = static_cast<Type*>(ioArray[I]);
+    ptr = new Type[iNewSize];
+    auto nToCopy = std::min(iOldSize,iNewSize);
+    std::copy(static_cast<Type const*>(ioArray[I]), static_cast<Type const*>(ioArray[I])+nToCopy, ptr);
+    resizeFromTo<I+1>(iOldSize, iNewSize, ioArray, std::conditional_t<I+1 == sizeof...(Args), std::false_type, std::true_type>{} );
+    delete [] ioArray[I];
+    ioArray[I]=ptr;
+  }
+  template<int I>
+    static void resizeFromTo(size_t, size_t, std::array<void *, sizeof...(Args)>& , std::false_type) {}
+
   struct CtrFillerFromAOS {
     template<typename T>
       static size_t fill(std::array<void *, sizeof...(Args)>& oValues, T const& iContainer) {
@@ -331,12 +360,33 @@ class Table {
     CtrFillerFromAOS::fillUsingFiller(iFiller,m_values, iContainer);
   }
 
+ Table( Table<Args...> const& iOther):m_size(iOther.m_size), m_values{nullptr} {
+    copyFromToWithResize<0>(m_size,iOther.m_values,m_values,std::true_type{});
+  }
+
+ Table( Table<Args...>&& iOther):m_size(0), m_values{nullptr} {
+    std::swap(m_size,iOther.m_size);
+    std::swap(m_values,iOther.m_values);
+}
+
  Table() : m_size(0) {
   }
 
   ~Table() {
     TableArrayDtr<sizeof...(Args)-1,Args...>::dtr(m_values);
   }
+
+  Table<Args...>& operator=(Table<Args...>&& iOther) {
+    Table<Args...> cp(std::move(iOther));
+    std::swap(m_size,cp.m_size);
+    std::swap(m_values, cp.m_values);
+    return *this;
+  }
+
+  Table<Args...>& operator=(Table<Args...> const& iOther) {
+    return operator=( Table<Args...>(iOther));
+  }
+  
   unsigned int size() const {
     return m_size;
   }

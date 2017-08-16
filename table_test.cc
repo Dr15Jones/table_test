@@ -119,6 +119,46 @@ int main()
     }
 
   }
+
+  {
+    ParticleTable copyTable{particles};
+
+    auto compare = [](const ParticleTable& iLHS, const ParticleTable& iRHS) {
+      if(iLHS.size() != iRHS.size()) {
+	std::cout <<"copy size wrong "<<iLHS.size()<<" "<<iRHS.size()<<std::endl;
+      }
+      for(size_t i = 0; i< iRHS.size(); ++i) {
+	if(iLHS.get<Px>(i) != iRHS.get<Px>(i)) {
+	  std::cout <<"copy px not the same "<<i<<" "<<iLHS.get<Px>(i)<< " "<<iRHS.get<Px>(i)<<std::endl;
+	}
+	if(iLHS.get<Py>(i) != iRHS.get<Py>(i)) {
+	  std::cout <<"copy py not the same "<<i<<" "<<iLHS.get<Py>(i)<< " "<<iRHS.get<Py>(i)<<std::endl;
+	}
+	if(iLHS.get<Pz>(i) != iRHS.get<Pz>(i)) {
+	  std::cout <<"copy pz not the same "<<i<<" "<<iLHS.get<Pz>(i)<< " "<<iRHS.get<Pz>(i)<<std::endl;
+	}
+	if(iLHS.get<Energy>(i) != iRHS.get<Energy>(i)) {
+	  std::cout <<"copy energy not the same "<<i<<" "<<iLHS.get<Energy>(i)<< " "<<iRHS.get<Energy>(i)<<std::endl;
+	}
+      }
+    };
+    compare(copyTable,particles);
+
+    std::cout <<"move ctr"<<std::endl;
+    ParticleTable moveTable(std::move(copyTable));
+    compare(moveTable,particles);
+
+    std::cout <<"op="<<std::endl;
+    ParticleTable opEqTable;
+    opEqTable = particles;
+    compare(opEqTable,particles);
+
+    std::cout <<"op=&&"<<std::endl;
+    ParticleTable opEqMvTable;
+    opEqMvTable=std::move(moveTable);
+    compare(opEqMvTable,particles);
+  }
+
   return 0;
 }
 
