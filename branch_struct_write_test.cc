@@ -39,9 +39,9 @@ TableBranchWriter::TableBranchWriter(std::string const& iName, TTree& iTree, Tab
 
   strct += "int size;";
   // We put the type name as meta data via a comment
-  // We can't do this right now since we can't build Table<> dictionaries because of a ROOT bug
+  // We can't do this right now since we can't build Table<> dictionaries because of a clang bug
   //std::string tableTypeName = TClass::GetClass(iReader.typeid())->GetName();
-  std::string tableTypeName ="Table<Column<&kEta,double>,Column<&kPhi,double> >";
+  std::string tableTypeName ="Table<Column<kEta,double>,Column<kPhi,double> >";
   strct +="//";
   strct +=tableTypeName;
   strct +="\n";
