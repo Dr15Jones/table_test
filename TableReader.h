@@ -19,6 +19,7 @@ public:
 
   virtual void * columnAddress(unsigned int iColumnIndex) const = 0;
 
+  virtual const std::type_info* typeID() const = 0;
 };
 
 
@@ -51,6 +52,10 @@ public:
     columnDescImpl<0, T::kNColumns>(returnValue, static_cast<std::true_type*>(nullptr));
     return returnValue;
   } 
+
+  const std::type_info* typeID() const override final {
+    return &typeid(T);
+  }
 
 private:
   template <int I, int S>
