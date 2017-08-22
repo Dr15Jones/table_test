@@ -60,6 +60,24 @@ bool buildShadowClassFor(TBranch* iBranch) {
   return gInterpreter->Declare(strct.c_str());
 }
 
+std::string
+storedTableClassName(TBranch* iBranch) {
+  auto be = dynamic_cast<TBranchElement*>(iBranch);
+  assert(be != nullptr);
+  auto si = be->GetInfo();
+
+  const std::string kSize("size");
+
+  for(int i = 0; i< si->GetNelement();++i) {
+    auto e = si->GetElement(i);
+    if (kSize == e->GetName()) {
+      return e->GetTitle();
+    }
+  }
+
+  return std::string{};
+}
+
 int main()
 {
 
@@ -70,17 +88,21 @@ int main()
   TTree* tree = dynamic_cast<TTree*>(f.Get("Events"));
   assert(tree != nullptr);
 
-  JetTable jets;
-  JetTable* pJets = &jets;
-
-
   const std::string branchName("Jets.");  
   auto jetBranch = tree->GetBranch(branchName.c_str());
-  assert(0 != jetBranch);
+  assert(nullptr != jetBranch);
   buildShadowClassFor(jetBranch);
+
+  auto cls = TClass::GetClass(storedTableClassName(jetBranch).c_str());
+  assert(nullptr != jetBranch);
+
+  void* pJets = cls->New();
+  assert(nullptr != pJet);
 
   jetBranch->SetAddress(&pJets);
   
+  JetTable const& jets = *(reinterpret_cast<JetTable*>(pJets));
+
   auto nEntries = tree->GetEntries();
   for(decltype(nEntries) i = 0; i< nEntries; ++i) {
     
@@ -91,5 +113,6 @@ int main()
     }
   }
   
+  cls->Destructor(pJets);
   return 0;
 }
