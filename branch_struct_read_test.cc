@@ -97,7 +97,7 @@ int main()
   assert(nullptr != jetBranch);
 
   void* pJets = cls->New();
-  assert(nullptr != pJet);
+  assert(nullptr != pJets);
 
   jetBranch->SetAddress(&pJets);
   
