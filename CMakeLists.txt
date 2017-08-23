@@ -51,5 +51,8 @@ target_link_libraries(branch_struct_read_test ${ROOT_LIBRARIES})
 add_executable(branch_wrapper_write_test branch_wrapper_write_test.cc)
 target_link_libraries(branch_wrapper_write_test ${ROOT_LIBRARIES})
 
+add_executable(branch_wrapper_read_test branch_wrapper_read_test.cc)
+target_link_libraries(branch_wrapper_read_test ${ROOT_LIBRARIES})
+
 set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_BUILD_TYPE Debug)
