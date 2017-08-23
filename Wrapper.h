@@ -17,6 +17,8 @@ namespace edmtst {
   template<typename T>
     class Wrapper : public WrapperBase {
   public:
+    Wrapper() = default;
+
     explicit Wrapper(T&& iFrom): 
       obj{std::move(iFrom)},
       present{true} {}
